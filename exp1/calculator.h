@@ -1,172 +1,65 @@
-//五种联结词优先级 ! * + @ $ 分别代表否定 合取 析取 单条件 双条件
-//规定符号代换规则为 ┐:!  ∧:*  ∨:+  ->:@  <->:$
 #pragma once
 #include <iostream>
-#include <stdlib.h>
-#include <algorithm>
+#include <cstdlib>
 #include <string>
+#include <algorithm>
 #include <stack>
+#include "transform.h"
 using namespace std;
+short int IsTrue[128]; //存储为真的真值指派
+bool getTrue[128][7]; //存储所有的真值指派
+int loc;  //表示第几个真值指派类型
+bool state[27]; //表示命题变元对应的真值
 
-class calculator
+void set_getTrue()
 {
-    private:
-        char infix[32];  //中缀表达式
-        char postfix[32];  //后缀表达式
-    public:
-        //构造函数
-        calculator(char *exp)
+    for(int i = 0; i < 128; i++)
+    {
+        for(int j = 0; j < 7; j++)
         {
-            strcpy(this->infix, exp);
-            for(int i = 0; i < 32; i++)
+            getTrue[i][j] = 0;
+        }
+    }
+}
+//求后缀表达式的值
+void valueOfExpress(int nn, express exp)
+{
+    int flag = exp.checkExpression();
+    //表达式非法，则退出
+    if(flag == false)
+    {
+        cout << "ERROR::ILLEGAL EXPRESSION" << endl;
+    }
+    else
+    {
+        stack<int> saveValue;
+        int i = 0, j = 0;
+        int n1 = 0, n2 = 0;
+        string postfix = exp.getPostfix();
+        int lenPostfix = postfix.length();
+        for(int k = 0; k < nn; k++)
+        {
+            cout << ' ' << getTrue[loc][k] << ' ';
+        }
+        while(i <= lenPostfix)
+        {
+            //如果是操作数，则直接压入栈中
+            if(postfix[i] >= 65 && postfix[i] <= 90)
             {
-                postfix[i] = '\0';
-            }  
-        }
-        //析构函数
-        ~calculator()
-        {
-            delete[] infix;
-            delete[] postfix;
-        }
-        //获取中缀表达式和后缀表达式
-        void getInfix()
-        {
-            cout << infix << endl;
-        }
-        void getPostfix()
-        {
-            cout << postfix << endl;
-        }
-        //前缀表达式转后缀表达式
-        void transform()
-        {
-            stack<char> save;  //构造一个栈
-            int i = 0, j = 0;
-            while(this->infix[i] != '\0')
-            {
-                //读取操作数
-                if(this->infix[i] >= 65 && this->infix[i] <= 90)
-                {
-                    while(this->infix[i] >= 65 && this->infix[i] <= 90)
-                    {
-                        postfix[j] = this->infix[i];
-                        j++; 
-                        i++;
-                    }
-                }
-                //读取操作符
-                else
-                {
-                    if(this->infix[i] == '(' || this->infix[i] == ')')
-                    {
-                        //如果遇到'('，直接压入栈中
-                        if(this->infix[i] == '(')
-                        {
-                            save.push(this->infix[i]);
-                        }
-                        //如果遇到一个')'，那么就将栈元素弹出并加到后缀表达式尾端，但左右括号并不输出
-                        else if(this->infix[i] == ')')
-                        {
-                            //如果栈为空，则说明表达式错误
-                            if(save.empty())
-                            {
-                                cout << "ERROR::WRONG EXPRESSION" << endl;
-                                exit(0);
-                            }
-                            //如果不为空，则依次读取栈顶元素，直至遇到'('
-                            while(!save.empty() && save.top() != '(')
-                            {
-                                this->postfix[j] = save.top();
-                                j++;
-                            }
-                            //弹出栈顶元素
-                            if(save.top() == '(')
-                            {
-                                save.pop();
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if(save.empty())
-                        {
-                            save.push(this->infix[i]);
-                        }
-                        else
-                        {
-                            if(this->infix[i] == '!')
-                            {
-                                char temp = save.top();
-                                while(temp == '!' && temp != '(' && !save.empty())
-                                {
-                                    this->postfix[j] = save.top();
-                                    save.pop();
-                                    temp = save.top();
-                                    j++;
-                                }
-                                save.push(this->infix[i]);
-                            }
-                            else if(this->infix[i] == '*')
-                            {
-                                char temp = save.top();
-                                while(temp == '+' && temp != '(' && !save.empty())
-                                {
-                                    this->postfix[j] = save.top();
-                                    save.pop();
-                                    temp = save.top();
-                                    j++;
-                                }
-                                save.push(this->infix[i]);
-                            }
-                            else if(this->infix[i] == '+')
-                            {
-                                char temp = save.top();
-                                while((temp == '*' || temp == '!') && !save.empty())
-                                {
-                                    this->postfix[j] = save.top();
-                                    save.pop();
-                                    temp = save.top();
-                                    j++;
-                                }
-                                save.push(this->infix[i]);
-                            }
-                            else if(this->infix[i] == '@')
-                            {
-                                char temp = save.top();
-                                while((temp == '*' || temp == '!' || temp == '+') && !save.empty())
-                                {
-                                    this->postfix[j] = save.top();
-                                    save.pop();
-                                    temp = save.top();
-                                    j++;
-                                }
-                                save.push(this->infix[i]);
-                            }
-                            else if(this->infix[i] == '$')
-                            {
-                                char temp = save.top();
-                                while((temp == '*' || temp == '!' || temp == '+' || temp == '@') && !save.empty())
-                                {
-                                    this->postfix[j] = save.top();
-                                    save.pop();
-                                    temp = save.top();
-                                    j++;
-                                }
-                                save.push(this->infix[i]);
-                            }
-                        }
-                    }
-                    i++;
-                }
+                int temp = 0;
+                temp = getTrue[loc][postfix[i] - 65];
+                i++;
+                saveValue.push(temp);
             }
-            //后缀表达式
-            while(!save.empty())
+            //非操作，弹出栈顶元素并运算
+            else if(postfix[i] == '!')
             {
-                postfix[j] = save.top();
-                save.pop();
-                j++;
+                n1 = saveValue.top();
+                saveValue.pop();
+                n1 = 1 - n1;
+                saveValue.push(n1);
             }
-            postfix[j] = '\0';
         }
-};
+    }
+    
+}
